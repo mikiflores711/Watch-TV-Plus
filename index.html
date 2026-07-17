@@ -1,452 +1,233 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <!-- Bloqueo estricto de zoom para evitar que la pantalla se mueva en iPhone al escribir -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mi Web de TV Pro</title>
-    <script src="https://jsdelivr.net"></script>
-    <style>
-        :root {
-            --color-fav: #ffcc00;
-            --color-mexico: #00a650;
-            --color-vix: #ff4500;
-            --color-pluto: #00d2ff;
-            --color-tubi: #ff9900;
-            --color-espanol: #e50914;
-            --color-roku: #662d91;
-            --color-lg: #a50034;
-            --color-plex: #e5a93b;
-            --color-runtime: #0055ff;
-            --color-adult: #ff007f;
-            --border-default: #2d2d2d;
-        }
-
-        body { 
-            background: #121212; 
-            color: white; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            margin: 0; 
-            padding: 15px; 
-            padding-top: 290px; /* Espacio para la barra fija superior */
-            box-sizing: border-box;
-            -webkit-text-size-adjust: 100%; /* Evita cambios automáticos de texto en iOS */
-        }
-        
-        /* CONTENEDOR FIJO SUPERIOR */
-        .header-fijo {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background: #121212;
-            z-index: 1000;
-            box-shadow: 0px 5px 15px rgba(0,0,0,0.8);
-        }
-        
-        .contenedor-reproductor {
-            background: #000;
-            display: none;
-            width: 100%;
-        }
-        
-        video {
-            width: 100%;
-            max-height: 210px;
-            display: block;
-            background: #000;
-        }
-
-        .contenedor-busqueda {
-            padding: 12px 15px;
-            background: #1a1a1a;
-            border-bottom: 1px solid #2d2d2d;
-            box-sizing: border-box;
-        }
-        /* Tamaño mínimo de 16px para desactivar el auto-zoom nativo de iOS al presionar */
-        .barra-busqueda {
-            width: 100%;
-            padding: 12px 18px;
-            border-radius: 25px;
-            border: 1px solid #444;
-            background: #2a2a2a;
-            color: white;
-            font-size: 16px; 
-            box-sizing: border-box;
-            outline: none;
-            -webkit-appearance: none; /* Estilo nativo limpio en iOS */
-        }
-
-        /* Selector de Listas / Categorías Responsivo */
-        .selector-listas { 
-            display: flex; 
-            gap: 10px; 
-            overflow-x: auto; 
-            padding: 12px 15px; 
-            scrollbar-width: none; 
-            background: #121212;
-            -webkit-overflow-scrolling: touch; /* Deslizamiento fluido en iOS */
-        }
-        .selector-listas::-webkit-scrollbar { display: none; }
-        
-        .btn-lista { 
-            background: #222; 
-            color: #ccc; 
-            border: 2px solid #333; 
-            padding: 8px 16px; 
-            border-radius: 20px; 
-            font-size: 13px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            white-space: nowrap; 
-            transition: all 0.2s ease; 
-        }
-        
-        /* Colores dinámicos para botones activos e iluminados globalmente */
-        .btn-lista[data-cat="favoritos"].activo, .btn-lista[data-cat="favoritos"].iluminado { background: var(--color-fav); color: black; border-color: var(--color-fav); }
-        .btn-lista[data-cat="mexico"].activo, .btn-lista[data-cat="mexico"].iluminado { background: var(--color-mexico); color: white; border-color: var(--color-mexico); }
-        .btn-lista[data-cat="vix"].activo, .btn-lista[data-cat="vix"].iluminado { background: var(--color-vix); color: white; border-color: var(--color-vix); }
-        .btn-lista[data-cat="pluto"].activo, .btn-lista[data-cat="pluto"].iluminado { background: var(--color-pluto); color: black; border-color: var(--color-pluto); }
-        .btn-lista[data-cat="tubi"].activo, .btn-lista[data-cat="tubi"].iluminado { background: var(--color-tubi); color: black; border-color: var(--color-tubi); }
-        .btn-lista[data-cat="espanol"].activo, .btn-lista[data-cat="espanol"].iluminado { background: var(--color-espanol); color: white; border-color: var(--color-espanol); }
-        .btn-lista[data-cat="roku_all"].activo, .btn-lista[data-cat="roku_all"].iluminado { background: var(--color-roku); color: white; border-color: var(--color-roku); }
-        .btn-lista[data-cat="LG_Channels_mx"].activo, .btn-lista[data-cat="LG_Channels_mx"].iluminado { background: var(--color-lg); color: white; border-color: var(--color-lg); }
-        .btn-lista[data-cat="plex_mx"].activo, .btn-lista[data-cat="plex_mx"].iluminado { background: var(--color-plex); color: black; border-color: var(--color-plex); }
-        .btn-lista[data-cat="runtime"].activo, .btn-lista[data-cat="runtime"].iluminado { background: var(--color-runtime); color: white; border-color: var(--color-runtime); }
-        .btn-lista[data-cat="adult"].activo, .btn-lista[data-cat="adult"].iluminado { background: var(--color-adult); color: white; border-color: var(--color-adult); }
-
-        h2 { text-align: center; font-size: 15px; color: #888; font-weight: normal; margin-top: 10px; margin-bottom: 20px; }
-
-        /* Grid de Canales Auto-Responsivo */
-        .grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); 
-            gap: 12px; 
-            max-width: 1000px; 
-            margin: 0 auto; 
-            padding-bottom: 40px; 
-            box-sizing: border-box;
-        }
-        
-        /* DISEÑO DE TARJETA */
-        .canal { 
-            background: #1e1e1e; 
-            border-radius: 12px; 
-            padding: 10px; 
-            text-align: center; 
-            border: 2px solid var(--border-default); 
-            cursor: pointer; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            position: relative;
-            user-select: none;
-            -webkit-user-select: none;
-            transition: transform 0.1s ease, background-color 0.1s ease;
-            box-sizing: border-box;
-        }
-        
-        /* EFECTO DE PULSACIÓN EN MÓVIL */
-        .canal:active { 
-            transform: scale(0.92); 
-            background-color: #2a2a2a; 
-        }
-        
-        .canal img { width: 100%; height: 60px; object-fit: contain; margin-bottom: 8px; border-radius: 6px; background: #1a1a1a; pointer-events: none; }
-        .canal p { margin: 0; font-size: 12px; font-weight: 500; width: 100%; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; pointer-events: none; }
-        
-        .btn-favorito {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            background: rgba(0,0,0,0.6);
-            border: none;
-            color: #555;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 50%;
-            width: 26px;
-            height: 26px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s, color 0.2s;
-            z-index: 10;
-        }
-        .btn-favorito:active { transform: scale(1.3); }
-        .btn-favorito.en-favoritos { color: var(--color-fav); }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Watch TV Plus</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.13/dist/hls.min.js"></script>
+<style>
+:root{
+  --fav:#ffcc00;--mexico:#00a650;--vix:#ff4500;--pluto:#00d2ff;--tubi:#ff9900;
+  --espanol:#e50914;--roku:#662d91;--lg:#a50034;--plex:#e5a93b;--runtime:#0055ff;
+  --adult:#ff007f;--bg:#121212;--panel:#1a1a1a;--card:#1e1e1e;--line:#2d2d2d;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+body{padding:0 15px 40px;padding-top:var(--header-height,150px);-webkit-text-size-adjust:100%}
+button,input{font:inherit}
+.header-fijo{position:fixed;inset:0 0 auto 0;z-index:1000;background:var(--bg);box-shadow:0 5px 18px rgba(0,0,0,.8)}
+.contenedor-reproductor{display:none;background:#000;position:relative}
+.contenedor-reproductor.visible{display:block}
+video{width:100%;height:min(42vh,320px);display:block;background:#000;object-fit:contain}
+.player-info{position:absolute;left:10px;right:10px;bottom:8px;display:flex;align-items:center;gap:8px;pointer-events:none}
+.player-badge{background:rgba(0,0,0,.74);border:1px solid rgba(255,255,255,.15);border-radius:99px;padding:6px 10px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contenedor-busqueda{padding:11px 15px;background:var(--panel);border-bottom:1px solid var(--line)}
+.barra-busqueda{width:100%;padding:12px 17px;border-radius:25px;border:1px solid #444;background:#2a2a2a;color:#fff;font-size:16px;outline:none;-webkit-appearance:none}
+.barra-busqueda:focus{border-color:#805ad5;box-shadow:0 0 0 3px rgba(128,90,213,.2)}
+.selector-listas{display:flex;gap:9px;overflow-x:auto;padding:11px 15px;background:var(--bg);scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.selector-listas::-webkit-scrollbar{display:none}
+.btn-lista{background:#222;color:#ccc;border:2px solid #333;padding:8px 15px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-lista.activo,.btn-lista.iluminado{color:#fff}
+.btn-lista[data-cat="favoritos"].activo,.btn-lista[data-cat="favoritos"].iluminado{background:var(--fav);color:#111;border-color:var(--fav)}
+.btn-lista[data-cat="mexico"].activo,.btn-lista[data-cat="mexico"].iluminado{background:var(--mexico);border-color:var(--mexico)}
+.btn-lista[data-cat="vix"].activo,.btn-lista[data-cat="vix"].iluminado{background:var(--vix);border-color:var(--vix)}
+.btn-lista[data-cat="pluto"].activo,.btn-lista[data-cat="pluto"].iluminado{background:var(--pluto);color:#111;border-color:var(--pluto)}
+.btn-lista[data-cat="tubi"].activo,.btn-lista[data-cat="tubi"].iluminado{background:var(--tubi);color:#111;border-color:var(--tubi)}
+.btn-lista[data-cat="espanol"].activo,.btn-lista[data-cat="espanol"].iluminado{background:var(--espanol);border-color:var(--espanol)}
+.btn-lista[data-cat="roku_all"].activo,.btn-lista[data-cat="roku_all"].iluminado{background:var(--roku);border-color:var(--roku)}
+.btn-lista[data-cat="LG_Channels_mx"].activo,.btn-lista[data-cat="LG_Channels_mx"].iluminado{background:var(--lg);border-color:var(--lg)}
+.btn-lista[data-cat="plex_mx"].activo,.btn-lista[data-cat="plex_mx"].iluminado{background:var(--plex);color:#111;border-color:var(--plex)}
+.btn-lista[data-cat="runtime"].activo,.btn-lista[data-cat="runtime"].iluminado{background:var(--runtime);border-color:var(--runtime)}
+.btn-lista[data-cat="adult"].activo,.btn-lista[data-cat="adult"].iluminado{background:var(--adult);border-color:var(--adult)}
+.estado{max-width:1100px;margin:12px auto 15px;text-align:center;color:#aaa;font-size:13px;min-height:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:12px;max-width:1100px;margin:0 auto}
+.canal{min-height:116px;background:var(--card);border-radius:12px;padding:10px;text-align:center;border:2px solid var(--line);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;user-select:none;transition:transform .12s,background .12s,box-shadow .12s}
+.canal:hover{background:#272727;box-shadow:0 8px 22px rgba(0,0,0,.34)}
+.canal:active{transform:scale(.95)}
+.canal.reproduciendo{box-shadow:0 0 0 3px rgba(255,255,255,.18),0 9px 25px rgba(0,0,0,.45)}
+.logo-wrap{width:100%;height:62px;border-radius:7px;background:#fff;display:grid;place-items:center;overflow:hidden;margin-bottom:8px}
+.logo-wrap.dark{background:#111}
+.canal img{width:100%;height:100%;object-fit:contain;padding:5px;display:block}
+.canal p{margin:0;font-size:12px;font-weight:600;width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
+.btn-favorito{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.66);border:0;color:#777;font-size:17px;cursor:pointer;border-radius:50%;width:28px;height:28px;display:grid;place-items:center;z-index:3}
+.btn-favorito.en-favoritos{color:var(--fav)}
+.empty{grid-column:1/-1;text-align:center;color:#777;padding:35px 10px;border:1px dashed #333;border-radius:12px}
+@media(max-width:600px){body{padding-left:10px;padding-right:10px}.grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:9px}.canal{min-height:108px;padding:8px}.logo-wrap{height:56px}.selector-listas{padding-left:10px;padding-right:10px}.contenedor-busqueda{padding-left:10px;padding-right:10px}}
+</style>
 </head>
 <body>
+<header class="header-fijo" id="headerFijo">
+  <div class="contenedor-reproductor" id="wrapperPlayer">
+    <video id="videoPlayer" controls playsinline webkit-playsinline></video>
+    <div class="player-info"><span class="player-badge" id="playerStatus">Selecciona un canal</span></div>
+  </div>
+  <div class="contenedor-busqueda">
+    <input id="inputBusqueda" class="barra-busqueda" type="search" placeholder="🔍 Buscar canales (excluye adultos)..." autocomplete="off">
+  </div>
+  <nav class="selector-listas" id="selectorListas">
+    <button class="btn-lista" data-cat="favoritos">⭐ Favoritos</button>
+    <button class="btn-lista" data-cat="mexico">México</button>
+    <button class="btn-lista" data-cat="vix">ViX</button>
+    <button class="btn-lista" data-cat="pluto">Pluto</button>
+    <button class="btn-lista" data-cat="tubi">Tubi</button>
+    <button class="btn-lista" data-cat="espanol">Español</button>
+    <button class="btn-lista" data-cat="roku_all">Roku TV</button>
+    <button class="btn-lista" data-cat="LG_Channels_mx">LG Channels</button>
+    <button class="btn-lista" data-cat="plex_mx">Plex</button>
+    <button class="btn-lista" data-cat="runtime">Runtime</button>
+    <button class="btn-lista" data-cat="adult">Adultos</button>
+  </nav>
+</header>
+<div class="estado" id="nombreLista">Cargando canales…</div>
+<main class="grid" id="contenedorCanales"></main>
+<script>
+'use strict';
+const video=document.getElementById('videoPlayer');
+const wrapper=document.getElementById('wrapperPlayer');
+const playerStatus=document.getElementById('playerStatus');
+const contenedor=document.getElementById('contenedorCanales');
+const nombreLista=document.getElementById('nombreLista');
+const inputBusqueda=document.getElementById('inputBusqueda');
+const headerFijo=document.getElementById('headerFijo');
 
-    <!-- BLOQUE SUPERIOR FIJO (REPRODUCTOR, BUSCADOR Y CATEGORÍAS) -->
-    <div class="header-fijo">
-        <div class="contenedor-reproductor" id="wrapperPlayer">
-            <video id="videoPlayer" controls playsinline webkit-playsinline></video>
-        </div>
-        
-        <div class="contenedor-busqueda">
-            <input type="text" id="inputBusqueda" class="barra-busqueda" placeholder="🔍 Buscar canales (Excluye adultos)..." oninput="filtrarBusqueda()">
-        </div>
+const BASE_URL=new URL('./',location.href).href;
+const PROXY_BASE='https://hls-proxy-tv-plus.mikimc-business.workers.dev/proxy?url=';
+const FAVORITES_KEY='tv_favoritos_v3';
+const FALLBACK_TIMEOUT=12000;
+const PLACEHOLDER='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="100%" height="100%" fill="#191919"/><text x="50%" y="52%" text-anchor="middle" fill="#aaa" font-family="Arial" font-size="28">TV</text></svg>`);
 
-        <div class="selector-listas">
-            <button class="btn-lista" data-cat="favoritos" onclick="cargarFavoritos(this)">⭐ Favoritos</button>
-            <button class="btn-lista" data-cat="mexico" onclick="cargarLista('mexico.m3u', this)">México</button>
-            <button class="btn-lista" data-cat="vix" onclick="cargarLista('vix.m3u', this)">Vix</button>
-            <button class="btn-lista" data-cat="pluto" onclick="cargarLista('pluto.m3u', this)">Pluto</button>
-            <button class="btn-lista" data-cat="tubi" onclick="cargarLista('tubi.m3u', this)">Tubi</button>
-            <button class="btn-lista" data-cat="espanol" onclick="cargarLista('espanol.m3u', this)">Español</button>
-            <button class="btn-lista" data-cat="roku_all" onclick="cargarLista('roku_all.m3u', this)">Roku</button>
-            <button class="btn-lista" data-cat="LG_Channels_mx" onclick="cargarLista('LG_Channels_mx.m3u', this)">LG Channels</button>
-            <button class="btn-lista" data-cat="plex_mx" onclick="cargarLista('plex_mx.m3u', this)">Plex</button>
-            <button class="btn-lista" data-cat="runtime" onclick="cargarLista('runtime.m3u', this)">Runtime</button>
-            <button class="btn-lista" data-cat="adult" onclick="cargarLista('adult.m3u', this)">Adultos</button>
-        </div>
-    </div>
+const LISTAS={
+ favoritos:{label:'⭐ Tus canales favoritos',file:null,color:'var(--fav)'},
+ mexico:{label:'México',file:'mexico.m3u',color:'var(--mexico)'},
+ vix:{label:'ViX',file:'vix.m3u',color:'var(--vix)'},
+ pluto:{label:'Pluto TV',file:'pluto.m3u',color:'var(--pluto)'},
+ tubi:{label:'Tubi TV',file:'tubi.m3u',color:'var(--tubi)'},
+ espanol:{label:'Español',file:'espanol.m3u',color:'var(--espanol)'},
+ roku_all:{label:'Roku TV',file:'roku_all.m3u',color:'var(--roku)'},
+ LG_Channels_mx:{label:'LG Channels',file:'LG_Channels_mx.m3u',color:'var(--lg)'},
+ plex_mx:{label:'Plex',file:'plex_mx.m3u',color:'var(--plex)'},
+ runtime:{label:'Runtime',file:'runtime.m3u',color:'var(--runtime)'},
+ adult:{label:'Adultos 18+',file:'adult.m3u',color:'var(--adult)',adult:true}
+};
 
-    <h2 id="nombreLista">Selecciona una categoría</h2>
-    <div class="grid" id="contenedorCanales"></div>
-    <script>
-        const video = document.getElementById('videoPlayer');
-        const wrapper = document.getElementById('wrapperPlayer');
-        let hlsInstance = null;
-        
-        let todosLosCanales = []; 
-        let categoriaActual = "";
-        let favoritos = JSON.parse(localStorage.getItem('tv_favoritos')) || [];
+let hlsInstance=null, fallbackTimer=null, playbackToken=0, currentChannel=null;
+let channelsByCategory={}, todosLosCanales=[], categoriaActual='mexico';
+let favoritos=loadFavorites();
 
-        const baseUrl = "https://mikiflores711.github.io/Watch-TV-Online/";
+function updateHeaderHeight(){document.body.style.setProperty('--header-height',`${headerFijo.offsetHeight+18}px`)}
+window.addEventListener('resize',updateHeaderHeight);
+new ResizeObserver(updateHeaderHeight).observe(headerFijo);
 
-        const coloresCategorias = {
-            'favoritos': 'var(--color-fav)',
-            'mexico.m3u': 'var(--color-mexico)',
-            'vix.m3u': 'var(--color-vix)',
-            'pluto.m3u': 'var(--color-pluto)',
-            'tubi.m3u': 'var(--color-tubi)',
-            'espanol.m3u': 'var(--color-espanol)',
-            'roku_all.m3u': 'var(--color-roku)',
-            'LG_Channels_mx.m3u': 'var(--color-lg)',
-            'plex_mx.m3u': 'var(--color-plex)',
-            'runtime.m3u': 'var(--color-runtime)',
-            'adult.m3u': 'var(--color-adult)'
-        };
+function loadFavorites(){try{const x=JSON.parse(localStorage.getItem(FAVORITES_KEY)||'[]');return Array.isArray(x)?x:[]}catch{return []}}
+function saveFavorites(){localStorage.setItem(FAVORITES_KEY,JSON.stringify(favoritos))}
+function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function normalizeUrl(url){return String(url||'').trim()}
+function categoryFromFile(file){return Object.keys(LISTAS).find(k=>LISTAS[k].file===file)||''}
 
-        window.onload = () => {
-            const botonMexico = document.querySelector('[data-cat="mexico"]');
-            if (botonMexico) botonMexico.click();
-            precargarTodasLasListas();
-        };
+async function fetchText(file){
+ const url=new URL(file,BASE_URL);url.searchParams.set('v',Date.now());
+ const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.text();
+}
 
-        async function precargarTodasLasListas() {
-            const listas = ['mexico.m3u','vix.m3u','pluto.m3u','tubi.m3u','espanol.m3u','roku_all.m3u','LG_Channels_mx.m3u','plex_mx.m3u','runtime.m3u','adult.m3u'];
-            for (const archivo of listas) {
-                try {
-                    const r = await fetch(baseUrl + archivo);
-                    const data = await r.text();
-                    parsearYGuardarGlobal(data, archivo);
-                } catch(e) {}
-            }
-        }
+function parseM3U(text,file,category){
+ const lines=String(text||'').replace(/\r/g,'').split('\n');const out=[];let current=null;
+ let referrer='',userAgent='',origin='';
+ for(let raw of lines){const line=raw.trim();if(!line)continue;
+  if(line.startsWith('#EXTVLCOPT:http-referrer=')){referrer=line.split('=').slice(1).join('=').trim();if(current)current.referrer=referrer;continue}
+  if(line.startsWith('#EXTVLCOPT:http-user-agent=')){userAgent=line.split('=').slice(1).join('=').trim();if(current)current.userAgent=userAgent;continue}
+  if(line.startsWith('#EXTVLCOPT:http-origin=')){origin=line.split('=').slice(1).join('=').trim();if(current)current.origin=origin;continue}
+  if(line.startsWith('#EXTINF')){
+   const attrs={};for(const m of line.matchAll(/([\w-]+)="([^"]*)"/g))attrs[m[1]]=m[2];
+   const comma=line.indexOf(',');const name=(comma>=0?line.slice(comma+1):'Canal sin nombre').trim()||'Canal sin nombre';
+   current={name,logo:attrs['tvg-logo']||'',group:attrs['group-title']||'',id:attrs['tvg-id']||'',file,category,referrer,userAgent,origin,logoBg:(attrs['logo-bg']||attrs['tvg-logo-bg']||'white').toLowerCase()};continue;
+  }
+  if(current&&(line.startsWith('http://')||line.startsWith('https://'))){
+   const parts=line.split('|');current.url=parts.shift().trim();
+   const opts=new URLSearchParams(parts.join('&'));current.referrer=opts.get('Referer')||opts.get('referrer')||current.referrer;current.userAgent=opts.get('User-Agent')||opts.get('user-agent')||current.userAgent;current.origin=opts.get('Origin')||current.origin;
+   out.push(current);current=null;referrer='';userAgent='';origin='';
+  }
+ }
+ const seen=new Set();return out.filter(ch=>ch.url&&!seen.has(ch.url)&&seen.add(ch.url));
+}
 
-        function parsearYGuardarGlobal(texto, archivo) {
-            const textoLimpio = texto.replace(/\r/g, '');
-            const lineas = textoLimpio.split('\n');
-            let canalActual = null;
-            
-            lineas.forEach(linea => {
-                linea = linea.trim();
-                if (linea.startsWith('#EXTINF:')) {
-                    let nombre = "Canal sin nombre";
-                    let logo = 'https://placeholder.com';
-                    
-                    const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
-                    if (infoLogo && infoLogo[1]) logo = infoLogo[1];
-                    
-                    const indiceComa = linea.lastIndexOf(',');
-                    if (indiceComa !== -1) nombre = linea.substring(indiceComa + 1).trim();
-                    canalActual = { nombre, logo, archivo };
-                } else if (linea.startsWith('http') && canalActual) {
-                    canalActual.url = linea;
-                    if(!todosLosCanales.some(c => c.url === canalActual.url)) {
-                        todosLosCanales.push(canalActual);
-                    }
-                    canalActual = null;
-                }
-            });
-        }
+async function preloadAll(){
+ nombreLista.textContent='Cargando todas las listas…';
+ const entries=Object.entries(LISTAS).filter(([,v])=>v.file);
+ const results=await Promise.all(entries.map(async([key,cfg])=>{try{const text=await fetchText(cfg.file);return[key,parseM3U(text,cfg.file,key),null]}catch(e){return[key,[],e]}}));
+ channelsByCategory={};todosLosCanales=[];const errors=[];
+ for(const [key,list,error] of results){channelsByCategory[key]=list;todosLosCanales.push(...list);if(error)errors.push(`${LISTAS[key].label}: ${error.message}`)}
+ todosLosCanales=[...new Map(todosLosCanales.map(c=>[c.url,c])).values()];
+ if(errors.length)console.warn('Listas con error:',errors);
+ showCategory('mexico');
+}
 
-        function limpiarIluminacionBotones() {
-            document.querySelectorAll('.btn-lista').forEach(btn => {
-                btn.classList.remove('activo', 'iluminado');
-            });
-        }
+function setActiveButton(cat){document.querySelectorAll('.btn-lista').forEach(b=>b.classList.toggle('activo',b.dataset.cat===cat));}
+function showCategory(cat){
+ categoriaActual=cat;inputBusqueda.value='';document.querySelectorAll('.btn-lista').forEach(b=>b.classList.remove('iluminado'));setActiveButton(cat);
+ const list=cat==='favoritos'?favoritos:(channelsByCategory[cat]||[]);renderChannels(list);
+ nombreLista.textContent=`${LISTAS[cat]?.label||cat} · ${list.length} canales`;
+}
 
-        function cargarLista(archivoM3u, boton) {
-            document.getElementById('inputBusqueda').value = ""; 
-            categoriaActual = archivoM3u;
-            
-            limpiarIluminacionBotones();
-            boton.classList.add('activo');
-            document.getElementById('nombreLista').innerText = `Cargando: ${boton.innerText}...`;
+function renderChannels(list){
+ contenedor.innerHTML='';
+ if(!list.length){contenedor.innerHTML='<div class="empty">No hay canales para mostrar en esta sección.</div>';return}
+ const frag=document.createDocumentFragment();
+ for(const ch of list){
+  const card=document.createElement('article');card.className='canal'+(currentChannel?.url===ch.url?' reproduciendo':'');card.style.borderColor=LISTAS[ch.category]?.color||'#2d2d2d';
+  const fav=favoritos.some(f=>f.url===ch.url);const dark=['black','dark'].includes(ch.logoBg);
+  card.innerHTML=`<button class="btn-favorito ${fav?'en-favoritos':''}" type="button" aria-label="Favorito">★</button><div class="logo-wrap ${dark?'dark':''}"><img loading="lazy" src="${escapeHtml(ch.logo||PLACEHOLDER)}" alt="${escapeHtml(ch.name)}"></div><p>${escapeHtml(ch.name)}</p>`;
+  const img=card.querySelector('img');img.onerror=()=>{img.onerror=null;img.src=PLACEHOLDER};
+  card.querySelector('.btn-favorito').addEventListener('click',e=>{e.stopPropagation();toggleFavorite(ch);});
+  card.addEventListener('click',()=>playChannel(ch));frag.appendChild(card);
+ }
+ contenedor.appendChild(frag);
+}
 
-            const contenedor = document.getElementById('contenedorCanales');
-            contenedor.innerHTML = '';
+function toggleFavorite(ch){const i=favoritos.findIndex(f=>f.url===ch.url);if(i>=0)favoritos.splice(i,1);else favoritos.push(ch);saveFavorites();
+ if(categoriaActual==='favoritos')showCategory('favoritos');else renderChannels(channelsByCategory[categoriaActual]||[]);
+}
 
-            fetch(baseUrl + archivoM3u)
-                .then(response => response.text())
-                .then(data => {
-                    const canalesDeLista = parsearM3U(data, archivoM3u);
-                    renderizarArregloCanales(canalesDeLista);
-                    document.getElementById('nombreLista').innerText = `${boton.innerText}`;
-                })
-                .catch(() => {
-                    document.getElementById('nombreLista').innerText = `Error al cargar ${boton.innerText}`;
-                });
-        }
+function searchChannels(){
+ const q=inputBusqueda.value.trim().toLocaleLowerCase('es');document.querySelectorAll('.btn-lista').forEach(b=>b.classList.remove('activo','iluminado'));
+ if(!q){showCategory(categoriaActual==='favoritos'?'mexico':categoriaActual);return}
+ const list=todosLosCanales.filter(c=>c.category!=='adult'&&(`${c.name} ${c.group}`).toLocaleLowerCase('es').includes(q));
+ const cats=new Set(list.map(c=>c.category));for(const cat of cats)document.querySelector(`[data-cat="${CSS.escape(cat)}"]`)?.classList.add('iluminado');
+ nombreLista.textContent=`Resultados para “${q}” · ${list.length} canales`;renderChannels(list);
+}
 
-        function parsearM3U(texto, archivo) {
-            const textoLimpio = texto.replace(/\r/g, '');
-            const lineas = textoLimpio.split('\n');
-            const listaResultado = [];
-            let canalActual = null;
+function proxyUrl(ch){let u=PROXY_BASE+encodeURIComponent(ch.url);if(ch.referrer)u+='&ref='+encodeURIComponent(ch.referrer);if(ch.userAgent)u+='&ua='+encodeURIComponent(ch.userAgent);if(ch.origin)u+='&origin='+encodeURIComponent(ch.origin);return u}
+function destroyPlayback(){clearTimeout(fallbackTimer);if(hlsInstance){hlsInstance.destroy();hlsInstance=null}video.pause();video.removeAttribute('src');video.load()}
 
-            lineas.forEach(linea => {
-                linea = linea.trim();
-                if (linea.startsWith('#EXTINF:')) {
-                    let nombre = "Canal sin nombre";
-                    let logo = 'https://placeholder.com';
-                    
-                    const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
-                    if (infoLogo && infoLogo[1]) logo = infoLogo[1];
-                    
-                    const indiceComa = linea.lastIndexOf(',');
-                    if (indiceComa !== -1) nombre = linea.substring(indiceComa + 1).trim();
-                    
-                    canalActual = { nombre, logo, archivo };
-                } else if (linea.startsWith('http') && canalActual) {
-                    canalActual.url = linea;
-                    listaResultado.push(canalActual);
-                    canalActual = null;
-                }
-            });
-            return listaResultado;
-        }
-        function cargarFavoritos(boton) {
-            document.getElementById('inputBusqueda').value = ""; 
-            categoriaActual = "favoritos";
-            limpiarIluminacionBotones();
-            boton.classList.add('activo');
-            document.getElementById('nombreLista').innerText = "⭐ Tus Canales Favoritos";
-            renderizarArregloCanales(favoritos);
-        }
+function playChannel(ch){
+ currentChannel=ch;wrapper.classList.add('visible');updateHeaderHeight();renderChannels(inputBusqueda.value?todosLosCanales.filter(c=>c.category!=='adult'&&(`${c.name} ${c.group}`).toLowerCase().includes(inputBusqueda.value.toLowerCase())):(categoriaActual==='favoritos'?favoritos:(channelsByCategory[categoriaActual]||[])));
+ playbackToken++;const token=playbackToken;destroyPlayback();playerStatus.textContent=`${ch.name} · conectando…`;
+ const candidates=[];const mixed=location.protocol==='https:'&&ch.url.startsWith('http://');const headers=ch.referrer||ch.userAgent||ch.origin;
+ if(!mixed&&!headers)candidates.push({name:'directo',url:ch.url});candidates.push({name:'proxy',url:proxyUrl(ch)});if(mixed||headers)candidates.push({name:'directo',url:ch.url});
+ const unique=[...new Map(candidates.map(x=>[x.url,x])).values()];tryCandidate(unique,0,token,ch);
+ wrapper.scrollIntoView({behavior:'smooth',block:'start'});
+}
 
-        function crearTarjetaCanal(canal, contenedor) {
-            const div = document.createElement('div');
-            div.className = 'canal';
-            
-            const colorBorde = coloresCategorias[canal.archivo] || 'var(--border-default)';
-            div.style.borderColor = colorBorde;
+function tryCandidate(candidates,index,token,ch){
+ if(token!==playbackToken)return;if(index>=candidates.length){playerStatus.textContent=`${ch.name} · señal no disponible o bloqueada`;return}
+ const cand=candidates[index];destroyPlayback();playerStatus.textContent=`${ch.name} · probando ${cand.name}`;
+ let succeeded=false;
+ const success=()=>{if(token!==playbackToken||succeeded)return;succeeded=true;clearTimeout(fallbackTimer);playerStatus.textContent=`${ch.name} · reproduciendo por ${cand.name}`};
+ const fail=()=>{if(token!==playbackToken||succeeded)return;clearTimeout(fallbackTimer);tryCandidate(candidates,index+1,token,ch)};
+ video.addEventListener('playing',success,{once:true});video.addEventListener('loadeddata',success,{once:true});video.addEventListener('error',fail,{once:true});
+ const isHls=/\.m3u8(?:$|[?#])/i.test(ch.url)||/m3u8/i.test(ch.url)||/jmp2\.uk\//i.test(ch.url);
+ if(isHls&&Hls.isSupported()){
+  hlsInstance=new Hls({enableWorker:true,lowLatencyMode:true,maxBufferLength:25,manifestLoadingMaxRetry:3,levelLoadingMaxRetry:3,fragLoadingMaxRetry:3});
+  hlsInstance.loadSource(cand.url);hlsInstance.attachMedia(video);
+  hlsInstance.on(Hls.Events.MANIFEST_PARSED,()=>video.play().catch(()=>{}));
+  hlsInstance.on(Hls.Events.ERROR,(_,data)=>{if(data.fatal)fail()});
+ }else{video.src=cand.url;video.play().catch(()=>{})}
+ fallbackTimer=setTimeout(fail,FALLBACK_TIMEOUT);
+}
 
-            const esFav = favoritos.some(f => f.url === canal.url);
-            const estrellaClase = esFav ? 'en-favoritos' : '';
-
-            div.innerHTML = `
-                <button class="btn-favorito ${estrellaClase}">★</button>
-                <img src="${canal.logo}" alt="${canal.nombre}" onerror="this.src='https://placeholder.com'">
-                <p>${canal.nombre}</p>
-            `;
-            
-            div.querySelector('.btn-favorito').onclick = (e) => {
-                e.stopPropagation();
-                alternarFavorito(e.target, canal);
-            };
-            
-            div.onclick = (e) => {
-                if(e.target.classList.contains('btn-favorito')) return;
-                playCanal(canal.url);
-            };
-
-            contenedor.appendChild(div);
-        }
-
-        function alternarFavorito(botonEstre, canal) {
-            const index = favoritos.findIndex(f => f.url === canal.url);
-            if (index > -1) {
-                favoritos.splice(index, 1);
-                botonEstre.classList.remove('en-favoritos');
-            } else {
-                favoritos.push(canal);
-                botonEstre.classList.add('en-favoritos');
-            }
-            
-            localStorage.setItem('tv_favoritos', JSON.stringify(favoritos));
-            
-            if (categoriaActual === "favoritos") {
-                renderizarArregloCanales(favoritos);
-            }
-        }
-
-        function renderizarArregloCanales(arreglo) {
-            const contenedor = document.getElementById('contenedorCanales');
-            contenedor.innerHTML = '';
-            if(arreglo.length === 0) {
-                contenedor.innerHTML = `<p style="grid-column: 1/-1; color: #666; text-align:center; margin-top:20px;">No hay canales para mostrar aquí.</p>`;
-                return;
-            }
-            arreglo.forEach(canal => crearTarjetaCanal(canal, contenedor));
-        }
-
-        function filtrarBusqueda() {
-            const texto = document.getElementById('inputBusqueda').value.toLowerCase().trim();
-            limpiarIluminacionBotones();
-            
-            if (texto === "") {
-                const btnMex = document.querySelector('[data-cat="mexico"]');
-                if(btnMex) btnMex.click();
-                return;
-            }
-
-            document.getElementById('nombreLista').innerText = `Resultados para: "${texto}"`;
-
-            const resultados = todosLosCanales.filter(canal => {
-                const coincideTexto = canal.nombre.toLowerCase().includes(texto);
-                const noEsAdulto = canal.archivo !== 'adult.m3u'; 
-                return coincideTexto && noEsAdulto;
-            });
-
-            const archivosConResultados = new Set(resultados.map(c => c.archivo));
-            archivosConResultados.forEach(archivo => {
-                const nombreCat = archivo.replace('.m3u', '');
-                const botonCorrespondiente = document.querySelector(`[data-cat="${nombreCat}"]`);
-                if (botonCorrespondiente) {
-                    botonCorrespondiente.classList.add('iluminado');
-                }
-            });
-
-            renderizarArregloCanales(resultados);
-        }
-
-        function playCanal(url) {
-            wrapper.style.display = "block";
-
-            if (hlsInstance) {
-                hlsInstance.destroy();
-                hlsInstance = null;
-            }
-
-            if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = url;
-                video.play();
-            } else if (Hls.isSupported()) {
-                hlsInstance = new Hls();
-                hlsInstance.loadSource(url);
-                hlsInstance.attachMedia(video);
-                hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-                    video.play();
-                });
-            }
-        }
-    </script>
+document.getElementById('selectorListas').addEventListener('click',e=>{const b=e.target.closest('.btn-lista');if(b)showCategory(b.dataset.cat)});
+inputBusqueda.addEventListener('input',searchChannels);
+window.addEventListener('beforeunload',destroyPlayback);
+window.addEventListener('DOMContentLoaded',()=>{updateHeaderHeight();preloadAll()});
+</script>
 </body>
 </html>
