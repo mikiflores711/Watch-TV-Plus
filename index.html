@@ -194,7 +194,6 @@
         let categoriaActual = "";
         let favoritos = JSON.parse(localStorage.getItem('tv_favoritos')) || [];
 
-        // URL base absoluta de tu repositorio para evitar problemas de CORS
         const baseUrl = "https://mikiflores711.github.io/Watch-TV-Online/";
 
         const coloresCategorias = {
@@ -236,6 +235,7 @@
                     let nombre = "Canal sin nombre";
                     let logo = 'https://placeholder.com';
                     
+                    // Extracción indestructible de logos
                     const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
                     if (infoLogo && infoLogo[1]) {
                         logo = infoLogo[1];
@@ -412,4 +412,3 @@
     </script>
 </body>
 </html>
-
