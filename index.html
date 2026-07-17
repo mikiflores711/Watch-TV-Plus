@@ -32,7 +32,7 @@
     <h1>Mi TV en Vivo</h1>
     <h2 id="nombreLista">Selecciona una categoría</h2>
 
-    <!-- Menú de categorías basado en tus archivos reales -->
+    <!-- Menú de categorías basado en tus archivos reales de GitHub -->
     <div class="selector-listas">
         <button class="btn-lista" onclick="cargarLista('mexico.m3u', this)">México</button>
         <button class="btn-lista" onclick="cargarLista('vix.m3u', this)">Vix</button>
@@ -55,23 +55,20 @@
     <script>
         const video = document.getElementById('videoPlayer');
 
-        // Carga la primera lista (México) por defecto al abrir la web
+        // Carga la lista de México automáticamente al abrir la web
         window.onload = () => {
             const primerBoton = document.querySelector('.btn-lista');
             if (primerBoton) primerBoton.click();
         };
 
         function cargarLista(archivoM3u, boton) {
-            // Actualizar estilo de los botones del menú
             document.querySelectorAll('.btn-lista').forEach(btn => btn.classList.remove('activo'));
             boton.classList.add('activo');
             document.getElementById('nombreLista').innerText = `Cargando lista: ${boton.innerText}...`;
 
-            // Limpiar canales anteriores
             const contenedor = document.getElementById('contenedorCanales');
             contenedor.innerHTML = '';
 
-            // Leer el archivo .m3u desde tu GitHub
             fetch(archivoM3u)
                 .then(response => {
                     if (!response.ok) throw new Error();
@@ -93,14 +90,23 @@
 
             lineas.forEach(linea => {
                 linea = linea.trim();
+                
                 if (linea.startsWith('#EXTINF:')) {
-                    // Buscar el logo si existe
-                    const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
-                    const logo = infoLogo ? infoLogo[1] : 'https://placeholder.com';
+                    let nombre = "Canal sin nombre";
+                    let logo = 'https://placeholder.com';
                     
-                    // Buscar el nombre del canal
-                    const partesNombre = linea.split(',');
-                    const nombre = partesNombre[partesNombre.length - 1].trim();
+                    // 1. Intentar buscar logo si existiera en un futuro
+                    const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
+                    if (infoLogo) logo = infoLogo[1];
+                    
+                    // 2. Extraer el nombre de forma segura (cortando después de la última coma)
+                    const indiceComa = linea.lastIndexOf(',');
+                    if (indiceComa !== -1) {
+                        nombre = linea.substring(indiceComa + 1).trim();
+                    } else {
+                        // Respaldo por si no tiene comas
+                        nombre = linea.replace('#EXTINF:', '').trim();
+                    }
                     
                     canalActual = { nombre, logo };
                 } else if (linea.startsWith('http') && canalActual) {
@@ -122,17 +128,14 @@
             contenedor.appendChild(div);
         }
 
-        // Sistema para forzar reproducción en reproductor nativo de pantalla completa
         function playCanal(url) {
             if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Comportamiento nativo directo en iOS (iPhone)
                 video.src = url;
                 video.style.display = "block";
                 video.play().then(() => {
                     if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
                 });
             } else if (Hls.isSupported()) {
-                // Comportamiento adaptado para Android mediante HLS.js
                 const hls = new Hls();
                 hls.loadSource(url);
                 hls.attachMedia(video);
@@ -145,7 +148,6 @@
             }
         }
 
-        // Al salir de pantalla completa en el móvil, limpia el reproductor
         const exitHandler = () => {
             if (!document.fullscreenElement && !document.webkitIsFullScreen) {
                 video.pause();
