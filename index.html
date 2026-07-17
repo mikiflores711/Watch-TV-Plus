@@ -194,7 +194,6 @@
         let categoriaActual = "";
         let favoritos = JSON.parse(localStorage.getItem('tv_favoritos')) || [];
 
-        // URL base absoluta de tu repositorio para evitar problemas de CORS
         const baseUrl = "https://mikiflores711.github.io/Watch-TV-Online/";
 
         const coloresCategorias = {
@@ -217,14 +216,16 @@
             precargarTodasLasListas();
         };
 
-        function precargarTodasLasListas() {
+        // Precarga con tiempos de espera mínimos para evitar saturar el navegador
+        async function precargarTodasLasListas() {
             const listas = ['mexico.m3u','vix.m3u','pluto.m3u','tubi.m3u','espanol.m3u','roku_all.m3u','LG_Channels_mx.m3u','plex_mx.m3u','runtime.m3u','adult.m3u'];
-            listas.forEach(archivo => {
-                fetch(baseUrl + archivo)
-                    .then(r => r.text())
-                    .then(data => parsearYGuardarGlobal(data, archivo))
-                    .catch(()=>{});
-            });
+            for (const archivo of listas) {
+                try {
+                    const r = await fetch(baseUrl + archivo);
+                    const data = await r.text();
+                    parsearYGuardarGlobal(data, archivo);
+                } catch(e) {}
+            }
         }
 
         function parsearYGuardarGlobal(texto, archivo) {
@@ -237,9 +238,7 @@
                     let logo = 'https://placeholder.com';
                     
                     const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
-                    if (infoLogo && infoLogo[1]) {
-                        logo = infoLogo[1];
-                    }
+                    if (infoLogo && infoLogo[1]) logo = infoLogo[1];
                     
                     const indiceComa = linea.lastIndexOf(',');
                     if (indiceComa !== -1) nombre = linea.substring(indiceComa + 1).trim();
@@ -268,7 +267,8 @@
             fetch(baseUrl + archivoM3u)
                 .then(response => response.text())
                 .then(data => {
-                    parsearM3UYMostrar(data, archivoM3u);
+                    const canalesDeLista = parsearM3U(data, archivoM3u);
+                    renderizarArregloCanales(canalesDeLista);
                     document.getElementById('nombreLista').innerText = `${boton.innerText}`;
                 })
                 .catch(() => {
@@ -276,9 +276,9 @@
                 });
         }
 
-        function parsearM3UYMostrar(texto, archivo) {
+        function parsearM3U(texto, archivo) {
             const lineas = texto.split('\n');
-            const contenedor = document.getElementById('contenedorCanales');
+            const listaResultado = [];
             let canalActual = null;
 
             lineas.forEach(linea => {
@@ -288,9 +288,7 @@
                     let logo = 'https://placeholder.com';
                     
                     const infoLogo = linea.match(/tvg-logo="([^"]+)"/);
-                    if (infoLogo && infoLogo[1]) {
-                        logo = infoLogo[1];
-                    }
+                    if (infoLogo && infoLogo[1]) logo = infoLogo[1];
                     
                     const indiceComa = linea.lastIndexOf(',');
                     if (indiceComa !== -1) nombre = linea.substring(indiceComa + 1).trim();
@@ -298,10 +296,11 @@
                     canalActual = { nombre, logo, archivo };
                 } else if (linea.startsWith('http') && canalActual) {
                     canalActual.url = linea;
-                    crearTarjetaCanal(canalActual, contenedor);
+                    listaResultado.push(canalActual);
                     canalActual = null;
                 }
             });
+            return listaResultado;
         }
 
         function cargarFavoritos(boton) {
